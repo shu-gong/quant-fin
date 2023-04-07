@@ -62,6 +62,18 @@ class Stock():
             if DATE[i] == end_date:
                 begin_flag = False    
         return value
+        
+    def read_PCR_new(self):
+        # 读取 CSV 文件为 DataFrame
+        path = "./stock_data/totalpc.csv"
+        pcr = pd.read_csv(path,skiprows=2)
+        
+        # 将日期列转换为日期类型
+        pcr['DATE'] = pd.to_datetime(pcr['DATE'], format='%m/%d/%Y')
+        
+        pcr = pcr[['DATE', 'P/C Ratio']].rename(columns={'DATE': 'Date', 'P/C Ratio': 'PCR'})
+        
+        return pcr        
 
 
     # calculate the moving derivation during a particular period
@@ -217,6 +229,14 @@ class Stock():
 
         return ir_date
 
+    def read_IR_new(self):
+
+        path = "./stock_data/stir_data.csv"
+        stir = pd.read_csv(path)
+        stir['Date'] = pd.to_datetime(stir['Date'])
+
+        return stir
+
     # read the VIX from csv
     def read_VIX(self, start_date="01/02/2018", end_date="01/02/2019"):
         # read from history, the temporal interval is close
@@ -234,6 +254,18 @@ class Stock():
                 begin_flag = False
 
         return vix_close
+
+    def read_VIX_new(self):
+        # 读取 CSV 文件为 DataFrame
+        path = "./stock_data/VIX_History.csv"
+        vix = pd.read_csv(path)
+        
+        # 将日期列转换为日期类型
+        vix['DATE'] = pd.to_datetime(vix['DATE'], format='%m/%d/%Y')
+        
+        vix = vix[['DATE', 'CLOSE']].rename(columns={'DATE': 'Date', 'CLOSE': 'VIX'})
+        
+        return vix
 
     def cal_KDLines(self, fastk=9, slowk=3, slowd=3):
         close, high, low = self.stock["Close"], self.stock["High"], self.stock["Low"]

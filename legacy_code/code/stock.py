@@ -12,15 +12,15 @@ import numpy as np
 from indicator import Stock
 
 def from_yahoo(ticker, start, end):
-    if (ticker or start or end) is None: return
     start_time = time.time()
     print("Downloading {} from {} to {} ...".format(ticker, start, end))
     df = yf.download(ticker, start = start, end = end, progress = False)
     print(df.head())
     print("{} from {} to {} downloaded".format(ticker, start, end))
-    csv = "D:\\Codebase\\fintech\\data\\{}.csv".format(ticker)
+    csv = "./stock_data/{}.csv".format(ticker)
     df.to_csv(csv, index = True)
     df = pd.read_csv(csv)
+    df['Date'] = pd.to_datetime(df['Date'])
     my_stock = Stock(df)
     df["Average"] = (df["High"] + df["Low"]) * 0.5
     df["Volume"] = df["Volume"]
@@ -32,27 +32,28 @@ def from_yahoo(ticker, start, end):
     df['OBV'] = my_stock.cal_OBV()
     df['RSI'] = my_stock.cal_RSI()
     df["DIF"], df["MACD"], df["DFF"]= my_stock.cal_MACD()
-    df['IR'] = my_stock.read_IR(2018, 12)
+    #df['IR'] = my_stock.read_IR(2018, 12)
     # df['VIX'] = my_stock.read_VIX("01/03/2011", "12/27/2018")
     # df["PCR"] = my_stock.read_PCR("2011/1/3", "2018/12/27")
-    df['VIX'] = my_stock.read_VIX("01/02/2018", "12/27/2018")
-    df["PCR"] = my_stock.read_PCR("2018/1/2", "2018/12/27")
-    
+    ir = my_stock.read_IR_new()
+    df = pd.merge(df, ir, on='Date', how='left')
+    vix = my_stock.read_VIX_new()
+    df = pd.merge(df, vix, on='Date', how='left')
+    pcr = my_stock.read_PCR_new()
+    df = pd.merge(df, pcr, on='Date', how='left')
+
     df['KL'], df['DL'] = my_stock.cal_KDLines()
     df['OUD'], df["CUD"] = my_stock.cal_trend(mode="Open"), my_stock.cal_trend(mode="Close")
-    df.to_csv("D:\\Codebase\\fintech\\data\\{}.csv".format(ticker), index = True)
+    df = df.ewm(alpha=0.5).mean()
+    df = df.fillna(0)
+
+    df.to_csv(csv, index = True)
     my_stock = Stock(df)
     df["RPB"], df["MACDC"], df["Candlestick"], df["KDLine"], df["OBVC"], df["RSIP"], df["PCRP"], df["PCRC"], df["RSIC"] = my_stock.determine_state()
-    df.to_csv("D:\\Codebase\\fintech\\data\\{}-state.csv".format(ticker), index = True)
+    df.to_csv("./stock_data/{}-state.csv".format(ticker), index = True)
     print("{} written.".format(csv))
     end_time = time.time()
     print("{:.3f}s elapsed.\n".format(end_time - start_time))
-
-
-    
-
-
-
 
 def to_mysql(host, user, password, database, ticker):
     if (database or ticker) is None: return
@@ -97,9 +98,10 @@ def to_mysql(host, user, password, database, ticker):
 
 if __name__ == "__main__":
     # tickers = ['AAPL', 'BIDU', 'MSFT', 'TSLA']
-    tickers = ['TQQQ']
+    #tickers = ['TQQQ']
+    tickers = ['AAPL']
     for ticker in tickers:
         # from_yahoo(ticker, '2011-01-03', '2018-12-28')
-        from_yahoo(ticker, '2018-1-02', '2018-12-28')
+        from_yahoo(ticker, None,None)
         # to_mysql("localhost", "root", "houjiacheng", "stock_min", "LABU")
  
