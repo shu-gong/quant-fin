@@ -15,6 +15,7 @@ def from_yahoo(ticker, start, end):
     start_time = time.time()
     print("Downloading {} from {} to {} ...".format(ticker, start, end))
     df = yf.download(ticker, start = start, end = end, progress = False)
+    #df.reset_index(drop=False, inplace=True)
     print(df.head())
     print("{} from {} to {} downloaded".format(ticker, start, end))
     csv = "./stock_data/{}.csv".format(ticker)
@@ -42,14 +43,9 @@ def from_yahoo(ticker, start, end):
     pcr = my_stock.read_PCR_new()
     df = pd.merge(df, pcr, on='Date', how='left')
 
-    df['KL'], df['DL'] = my_stock.cal_KDLines()
-    df['OUD'], df["CUD"] = my_stock.cal_trend(mode="Open"), my_stock.cal_trend(mode="Close")
-    df = df.ewm(alpha=0.5).mean()
+    df = df.fillna(method='ffill')
     df = df.fillna(0)
 
-    df.to_csv(csv, index = True)
-    my_stock = Stock(df)
-    df["RPB"], df["MACDC"], df["Candlestick"], df["KDLine"], df["OBVC"], df["RSIP"], df["PCRP"], df["PCRC"], df["RSIC"] = my_stock.determine_state()
     df.to_csv("./stock_data/{}-state.csv".format(ticker), index = True)
     print("{} written.".format(csv))
     end_time = time.time()
